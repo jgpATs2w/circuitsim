@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	
+		<meta charset="utf-8"/>
+		<title>Simulador</title>
+
+		<script src="jquery-1.10.2.js"></script>
+		<script src="kinetic-v4.7.2.min.js"></script>
+		<script src="sylvester.js"></script>
+		
+	</head>
+	
+	<body>
+		<button onclick="borrartodo();">Borrar todo</button><br>
+		<br>
+		<button onclick="dibujarcables();">Dibujar cables</button><br>
+		<button onclick="dibujarresistencias();">Dibujar resistencias</button><br>
+		<button onclick="dibujarfuentes();">Dibujar fuentes</button><br>
+		<textarea id="inputvalue" style="height: 15px;"></textarea>
+		<br>
+		<br>
+		<button onclick="mostrarnodos();">Mostrar/ocultar nodos</button><br>
+		<br>
+		<button onclick="solve()">SOLVE</button>
+		<button onclick="del()">CLEAN</button>
+		
+		
+		<div id="d1" style="position:absolute; z-index:99;"></div>
+		
+		<div id="contenedor"></div>
+		
+		<script src="main.js"></script>
+		
+		<script>
+			function solve(){
+				generarnetlist();
+				mna(netlist);
+			}
+			function del(){
+				document.getElementById('d1').innerHTML = "";
+			}
+			function say(m){
+				p = document.createElement('p');
+					p.innerHTML = m;
+				document.getElementById('d1').appendChild(p);
+			}
+		</script>		
+		
+	</body>
+
+</html>
