@@ -5,9 +5,9 @@
 		<meta charset="utf-8"/>
 		<title>Simulador</title>
 
-		<script src="jquery-1.10.2.js"></script>
-		<script src="kinetic-v4.7.2.min.js"></script>
-		<script src="sylvester.js"></script>
+		<script src="lib/jquery-1.10.2.js"></script>
+		<script src="lib/kinetic-v4.7.2.min.js"></script>
+		<script src="lib/sylvester.js"></script>
 		
 	</head>
 	
@@ -21,15 +21,17 @@
 		<br>
 		<br>
 		<button onclick="mostrarnodos();">Mostrar/ocultar nodos</button><br>
+		<button onclick="mostrarmatriznodos();">Mostrar la matriz de nodos</button><br>
 		<br>
 		<button onclick="solve()">SOLVE</button>
 		<button onclick="del()">CLEAN</button>
 		
 		
-		<div id="d1" style="position:absolute; z-index:99;"></div>
+		<div id="d1" style="position:absolute; z-index:99; font-family:Courier New; font-size: 10pt;"></div>
 		
 		<div id="contenedor"></div>
 		
+		<script src="element.js"></script>
 		<script src="main.js"></script>
 		
 		<script>

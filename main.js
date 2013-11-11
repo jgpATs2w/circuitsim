@@ -18,24 +18,32 @@ contenedor.addEventListener('mousemove', mousemove, false);
 contenedor.addEventListener('mouseup', mouseup, false);
 
 
+
 //parametros iniciales
 inicializar();
 
 function inicializar(){
 	drawing = false;
 	textclick = false;
+	elementdrag = false;
+	mostrandonodos = false; //test
+	elemdragged = "";
 	tipoelemento = "w";
+	groundnode = "";
 
 	malla = 12;
+	elemsize = malla*6;
+	cablewidth = 2;
+	
 	matrizcircuito = [];
 	matriznodos = [];
 	
 	elementos = [];
 	netlist = [];
 	
+	elemtypes = ["R", "V", "C"]; // añadir más..
 	numelemarray = [];
-	numelemarray["R"] = 0;
-	numelemarray["V"] = 0;
+
 	numelemtotal = 0;
 
 	xmin = 10000;
@@ -43,6 +51,24 @@ function inicializar(){
 	xmax = 0;
 	ymax = 0;
 }
+
+
+
+// inicialización de matrices
+inicialiazarmatrices();
+
+
+function inicialiazarmatrices(){
+	for (var i=0; i<anchura*2/malla; i++){
+		matrizcircuito[i] = [];
+		matriznodos[i] = [];
+		for (var j=0; j<altura*2/malla; j++){		
+			matrizcircuito[i][j] = ".";
+			matriznodos[i][j] = ".";
+		}
+	}
+}
+
 
 
 // definicion de las capas de dibujo de kinetic
@@ -56,12 +82,14 @@ stage = new Kinetic.Stage({
 backgroundlayer = new Kinetic.Layer();
 circuitlayer = new Kinetic.Layer();
 panellayer = new Kinetic.Layer();
+draglayer = new Kinetic.Layer();
 textlayer = new Kinetic.Layer();
 nodeslayer = "";
 
 stage.add(backgroundlayer);
 stage.add(circuitlayer);
 stage.add(panellayer);
+stage.add(draglayer);
 stage.add(textlayer);
 
 
@@ -88,7 +116,7 @@ for (var i=malla; i<anchura; i+=malla){
 			y: j-1,
 			width: 2,
 			height: 2,
-			fill: "grey",
+			fill: "darkgray",
 		});
 		
 		backgroundlayer.add(rect);
@@ -99,31 +127,150 @@ backgroundlayer.draw();
 
 
 
-// inicialización de matrices
-inicialiazarmatrices();
+// creación de las imágenes de los elementos ******************************************++
 
-function inicialiazarmatrices(){
-	for (var i=0; i<anchura*2/malla; i++){
-		matrizcircuito[i] = [];
-		//matriznodos[i] = [];
-		for (var j=0; j<altura*2/malla; j++){		
-			matrizcircuito[i][j] = ".";
-			//matriznodos[i][j] = ".";
-		}
-	}
+for (i=0; i<elemtypes.length; i++){
+	numelemarray[elemtypes[i]]=0;
+	createelems(i);
 }
 
 
+function createelems(index){
+
+	var img = new Image();
+
+	img.onload = function() {
+		createpanelelem(this, index);
+		createdraggingelem(this, index);
+	}
+	
+	img.src = "img/" + elemtypes[index] + ".png";
+
+}
 
 
-//dibujado
+//creación de los elementos fijos (el panel en sí)
+function createpanelelem(imagen, index){
+		
+		var elemimg = new Kinetic.Image({
+			x: 60,
+			y: 60 + index*(elemsize + malla),
+			image: imagen,
+			width: elemsize,
+			height: elemsize,
+			offset: [elemsize/2, elemsize/2],
+			stroke:"#9966FF",
+			strokeWidth:2
+		});
+
+		panellayer.add(elemimg);
+		panellayer.draw();
+		
+}
+
+	
+//creación de los elementos arrastrables
+function createdraggingelem(imagen, index){
+	
+	var elemimgdrag = new Kinetic.Image({
+		x: 60,
+		y: 60 + index*(elemsize + malla),
+		image: imagen,
+		width: elemsize,
+		height: elemsize,
+		draggable: true,
+		offset: [elemsize/2, elemsize/2]
+	});		
+
+	elemimgdrag.setAttr("elemindex", index);
+	//elemimgdrag.setAttr("rotation", 0);
+	
+	
+	//interactividad de los elementos
+	
+	elemimgdrag.on("mousedown", function(){
+		elementdrag = true;
+		elemdragged = this;
+	});
+
+	
+	elemimgdrag.on("mouseup", function(){
+		elementdrag = false;
+		elemdragged = "";
+		
+		x = this.getAttr("x");
+		y = this.getAttr("y");
+		
+		ajustaramalla();
+		
+		this.setAttr("x",x);
+		this.setAttr("y",y);
+		
+		draglayer.draw();
+		
+		//determina la posición de los extremos del elemento en función de la posición de la imagen
+		if (this.getAttr("rotation") % Math.PI == 0){
+		
+			x0 = x - elemsize/2;
+			xf = x + elemsize/2;
+			y0 = yf = y1 = y2 = y;
+			
+			x1 = x0 + malla;
+			x2 = xf - malla;
+			
+		} else {
+		
+			x0 = xf = x1 = x2 = x;
+			y0 = y - elemsize/2;
+			yf = y + elemsize/2;
+			
+			y1 = y0 + malla;
+			y2 = yf - malla;
+		}
+		
+		
+		//añade el elemento al circuito
+		var tipoelem = elemtypes[index];
+		addtomatrix(x1, y1, x2, y2, tipoelem);
+		addelement(x1, y1, x2, y2, tipoelem);
+
+		//añade una 'unidad' de cable en cada extremo
+		addtomatrix(x0, y0, x1, y1, "w"); 
+		addtomatrix(x2, y2, xf, yf, "w");
+		
+		//crea un nuevo elemento arrastable en el panel
+		createdraggingelem(this.getAttr("image"), this.getAttr("elemindex"));
+	});
+
+	
+	elemimgdrag.on("mouseover", function(){
+		document.body.style.cursor =  "pointer";
+	});
+		
+	elemimgdrag.on("mouseout", function() {
+		document.body.style.cursor = "default";
+	});
+	
+	
+	draglayer.add(elemimgdrag);
+	draglayer.draw();	
+}
+
+// fin de la creación de las imágenes de los elementos **************************************
+
+
+
+
+//funciones de dibujo *****************************
 
 function mousedown(ev){
 	
-	if (textclick){return;}
+	if (textclick || elementdrag){return;}
 	
 	getcoordinates(ev);	
 	ajustaramalla();
+	
+	groundnode = {x: x*2/malla, y: y*2/malla}; //test zzzzz
 	
 	drawing = true;
 	dir = "";
@@ -133,6 +280,7 @@ function mousedown(ev){
 	x1 = x;
 	y1 = y;
 	
+	// test - old - dibujado de elementos con ratón
 	if (tipoelemento == "w"){color = "black";}//
 	if (tipoelemento == "R"){color = "red";}//
 	if (tipoelemento == "V"){color = "limegreen";}//
@@ -142,7 +290,7 @@ function mousedown(ev){
 	templine = new Kinetic.Line({
 		points: [x0, y0, x0, y0],
         stroke: color,
-        strokeWidth: 4,
+        strokeWidth: cablewidth,
         lineCap: 'round',
         lineJoin: 'round'
      });
@@ -151,6 +299,8 @@ function mousedown(ev){
 	stage.add(drawinglayer);
 	
 }	
+
+
 
 function mousemove(ev){
 	
@@ -219,11 +369,11 @@ function mouseup(ev){
 			circuitlayer.draw();
 			
 			if (tipoelemento != "w"){
-				addelement(x0, y0, x1, y1);
+				addelement(x0, y0, x1, y1, tipoelemento);
 			}
 			
-			addtomatrix(x0, y0, x1, y1);
-			addtomatrix(x1, y1, x2, y2);
+			addtomatrix(x0, y0, x1, y1, tipoelemento);
+			addtomatrix(x1, y1, x2, y2, tipoelemento);
 		
 		}
 
@@ -234,13 +384,13 @@ function mouseup(ev){
 
 
 
-// añadir elementos dibujados a la matriz del circuito
+// añadir elementos y cables dibujados a la matriz del circuito
 
-function addtomatrix(x0, y0, xf, yf){
+function addtomatrix(x0, y0, xf, yf, tipo){
 
 	for (var i=Math.min(x0,xf)*2/malla; i<=Math.max(x0,xf)*2/malla; i++){
 		for (var j=Math.min(y0,yf)*2/malla; j<=Math.max(y0,yf)*2/malla; j++){
-			matrizcircuito[i][j] = tipoelemento;
+			matrizcircuito[i][j] = tipo;
 		}
 	}
 	
@@ -248,34 +398,48 @@ function addtomatrix(x0, y0, xf, yf){
 	ymin = Math.min(ymin, y0, yf);
 	xmax = Math.max(xmax, x0, xf);
 	ymax = Math.max(ymax, y0, yf);
+	
+	
+	// test, para que actualice los nodos si se están mostrando al añadir cables y elementos
+	if (mostrandonodos){ 
+		nodeslayer.remove();
+		nodeslayer = "";
+		mostrandonodos = false;
+		mostrarnodos();
+	}
+	
 }
 
 
-function addelement(x0, y0, xf, yf){
+// añadir elementos al array de elementos y añadirles etiquetas
+
+function addelement(x0, y0, xf, yf, tipo){
 	
 	numelemtotal++;
-	numelemarray[tipoelemento]++;
+	numelemarray[tipo]++;
 	
-	var name = tipoelemento + numelemarray[tipoelemento];
+	var name = tipo + numelemarray[tipo];
 	
 	elementos.push({name: name, x0: x0, y0: y0, xf: xf, yf:yf, value: "?"});
-
-	//añadir la etiqueta con el nombre de los elementos
+	e = new Element(name);
+	e.edit();
+	//añadir la etiqueta --------
+	
 	if (x0==xf){
-		tx = x0 - 15;
+		tx = x0 - 35;
 		ty = (y0 + yf)/2;
 	} else {
 		tx = (x0 + xf)/2;
-		ty = y0 - 10;
+		ty = y0 - 30;
 	}
 	
 	var text = new Kinetic.Text({
-		x: tx-15,
+		x: tx-12,
 		y: ty-12,
 		text:  name,
 		fontSize: 22,
 		fontFamily: 'calibri',
-		fill: 'black',
+		fill: '#000099',
 		name: name,
 		draggable: true
 	});
@@ -284,7 +448,6 @@ function addelement(x0, y0, xf, yf){
 	
 	text.on("mousedown", function(){
 		textclick = true;
-		//this.setText(this.getAttr("name") + " = ");
 		textlayer.draw();
 		elementpointer = this;
 		$("#inputvalue").val(this.getAttr("elemval"));
@@ -307,7 +470,13 @@ function addelement(x0, y0, xf, yf){
 	textlayer.add(text);
 	textlayer.draw();
 	
+	// fin de etiqueta -------
+	
 }
+
+// fin del las funciones de dibujo ***************************************************
+
+
 
 
 // asignar valores a los elementos del circuito
@@ -354,8 +523,6 @@ function borrartodo(){
 	stage.add(circuitlayer);
 	stage.add(textlayer);
 	
-	$("#netlist").html("");
-	
 	inicializar();
 	inicialiazarmatrices();
 	
@@ -379,46 +546,54 @@ function dibujarfuentes(){
 
 function mostrarnodos(){
 
-	if(nodeslayer != ""){
+	if(mostrandonodos){
 		nodeslayer.remove();
 		nodeslayer = "";
+		mostrandonodos = false;
 	} else {
 	
+		mostrandonodos = true;
+		
 		encontrarnodos();
 	
 		nodeslayer = new Kinetic.Layer();
-		var alr = [".", "#"];
+		var nodosmostrados = [];
 		
 		for (var j=ymin*2/malla; j<=ymax*2/malla; j+=2){	
 			for (var i=xmin*2/malla; i<=xmax*2/malla; i+=2){
 			
 				var nodotext = matriznodos[i][j];
 				
-				if (alr.indexOf(nodotext) < 0){
+				if (typeof nodotext == "number" && nodosmostrados.indexOf(nodotext) < 0){
 					var text = new Kinetic.Text({
 						x: i*malla/2+2,
 						y: j*malla/2+1,
 						text: nodotext,
 						fontSize: 15,
 						fontFamily: 'calibri',
-						fill: 'blue'
+						fontStyle: 'bold',
+						fill: 'darkgreen'
 					});
 					nodeslayer.add(text);
-					alr.push(nodotext);
+					nodosmostrados.push(nodotext);
 				}
 			}
 		}
-	  stage.add(nodeslayer);
-	 }
+		stage.add(nodeslayer);
+	}
 }
 
 			
+			
+// creación de la netlist			
 			
 function generarnetlist(){
 
 	encontrarnodos();
 	
 	netlist = [];
+	
+	everythingfine = true;
 	
 	for (var i=0; i<elementos.length; i++){
 		
@@ -435,29 +610,30 @@ function generarnetlist(){
 		
 		netlist.push([name, node1, node2, value])
 	}
+	
+	if (!everythingfine){alert("hay algo mal conectado!")};
 }
 
 
 
-function nearestnode(i, j){//errores de aproximación
+function nearestnode(i, j){
 
-	if (matriznodos[i-1][j] != "#" && matriznodos[i-1][j] != "."){
+	if (typeof matriznodos[i-1][j] == "number"){
 		return matriznodos[i-1][j];
 		
-	} else if (matriznodos[i+1][j] != "#" && matriznodos[i+1][j] != "."){
+	} else if (typeof matriznodos[i+1][j] == "number"){
 		return matriznodos[i+1][j];
 		
-	} else if (matriznodos[i][j-1] != "#" && matriznodos[i][j-1] != "."){
+	} else if (typeof matriznodos[i][j-1] == "number"){
 		return matriznodos[i][j-1];
 		
-	} else if (matriznodos[i][j+1] != "#" && matriznodos[i][j+1] != "."){
+	} else if (typeof matriznodos[i][j+1] == "number"){
 		return matriznodos[i][j+1];
 		
 	} else {
-		alert("hay elementos mal posicionados en "+i+","+j);
+		everythingfine = false;
 	}
 }
-
 
 
 
@@ -473,9 +649,7 @@ function encontrarnodos(){
 	//duplicar la matriz de malla
 	for (var j=ymin*2/malla; j<=ymax*2/malla; j++){	
 		for (var i=xmin*2/malla; i<=xmax*2/malla; i++){
-			matriznodos[i] = [];
-			(matrizcircuito[i][j] == "w" || matrizcircuito[i][j] == ".") ? elem = matrizcircuito[i][j] : elem = "#";
-			matriznodos[i][j] = elem;
+			matriznodos[i][j] = matrizcircuito[i][j];
 		}
 	}
 	
@@ -483,37 +657,34 @@ function encontrarnodos(){
 	for (var j=ymin*2/malla; j<=ymax*2/malla; j++){	
 		for (var i=xmin*2/malla; i<=xmax*2/malla; i++){
 		
-			var vd = matriznodos[i][j];
+			if( matriznodos[i][j] == "w"){
 			
-			if (vd == "w"){
-			
-				var va = matriznodos[i-1][j-1];
-				var vb = matriznodos[i][j-1];	
-				var vc = matriznodos[i-1][j];
+				var vtop = matriznodos[i][j-1];	
+				var vleft = matriznodos[i-1][j];
 				
 				//nueva esquina
-				if (vb=="." && vc=="."){
+				if (vtop=="." && vleft=="."){
 					matriznodos[i][j] = nodetemp;
 					temptoreal[nodetemp]= nodetemp;
 					nodetemp ++;
 				}
 				
 				//continuación de cable horizontal
-				if (vb=="." && vc!="." && vc!="#"){
-					matriznodos[i][j] = vc;
+				if (vtop=="." && typeof vleft == "number"){
+					matriznodos[i][j] = vleft;
 				}
 				
 				//continuación de cable vertical
-				if (vc=="." && vb!="." && vb!="#"){
-					matriznodos[i][j] = vb;
+				if (vleft=="." && typeof vtop == "number"){
+					matriznodos[i][j] = vtop;
 				}
 				
 				//esquina
-				if (vb!="." && vb!="#" && vc!="." && vc!="#"){
+				if (typeof vtop == "number" && typeof vleft == "number"){
 					
 					//continuación de esquina
-					if (vb==vc){
-						matriznodos[i][j] = vb;
+					if (vtop==vleft){
+						matriznodos[i][j] = vtop;
 					}
 					
 					//conflicto de esquina
@@ -521,20 +692,21 @@ function encontrarnodos(){
 						matriznodos[i][j] = nodetemp;
 						
 						for (var k=0; k<nodetemp; k++){
-							if (k!=vb && k!=vc && (temptoreal[k]==temptoreal[vb] || temptoreal[k]==temptoreal[vc])){
+							if (k!=vtop && k!=vleft && (temptoreal[k]==temptoreal[vtop] || temptoreal[k]==temptoreal[vleft])){
 								temptoreal[k]=nodetemp;
 							}
 						}
 						
 						temptoreal[nodetemp]=nodetemp;
-						temptoreal[vb]=nodetemp;
-						temptoreal[vc]=nodetemp;
+						temptoreal[vtop]=nodetemp;
+						temptoreal[vleft]=nodetemp;
 						nodetemp++;
 					}
 				}
 				
 				//final de elemento
-				if (vb=="#" || vc=="#"){
+				if (elemtypes.indexOf(vtop) != -1 || elemtypes.indexOf(vleft) != -1){
+				//if (vtop == "#" || vleft == "#"){
 					matriznodos[i][j] = nodetemp;
 					temptoreal[nodetemp]=nodetemp;		
 					nodetemp ++;			
@@ -559,15 +731,38 @@ function encontrarnodos(){
 	}
 	
 	
+	//asignación del nodo 0 al nodo tierra (si está definido)
+	// if (groundnode != ""){
+	
+		// var cel = matriznodos[groundnode.x][groundnode.y];
+		
+		// if (cel!="#" && cel!="."){
+		
+			// var gnode = temptoreal[cel];
+			// console.log("gnode", gnode); //
+			
+			// for (var j=0; j<nodetemp; j++){
+				// if (temptoreal[j]==0){
+					// temptoreal[j]=gnode;
+				// } else if (temptoreal[j]==gnode){
+					// temptoreal[j]=0;
+				// }
+			// }	
+		// }			
+	// }
+	
+	
 	//matriz de nodos final
 	for (var j=ymin*2/malla; j<=ymax*2/malla; j++){	
 		for (var i=xmin*2/malla; i<=xmax*2/malla; i++){
-			if (matriznodos[i][j]!= "." && matriznodos[i][j]!= "#"){
+			if (typeof matriznodos[i][j] == "number"){
 				matriznodos[i][j] = temptoreal[matriznodos[i][j]] ;
 			}
 		}
 	}	
 }
+
+
 
 
 function mna(netlist){
@@ -627,7 +822,7 @@ function mna(netlist){
 				throw new Error('unsupported element ' + nl.elements[i][0] );
 		}
 		
-		numNode = Math.max(nl.elements[i][1], Math.max(nl.elements[i][2], numNode) );		
+		numNode = Math.max(nl.elements[i][1], Math.max(nl.elements[i][2], numNode) );
 	}
 	
 	//Preallocate all of the cell arrays #############################################
@@ -662,7 +857,7 @@ function mna(netlist){
 			G.elements[n2-1][n1-1] = G.elements[n2-1][n1-1] - g;
 		}
 		
-		//If node 1 is connected to ground, add element to diagonal of matrix
+		//If node 1 is *NOT* connected to ground, add element to diagonal of matrix
 		if (n1!=0)
 			G.elements[n1-1][n1-1] = G.elements[n1-1][n1-1] + g;
 			
@@ -684,7 +879,7 @@ function mna(netlist){
 	}
 	//Fill the V matrix ##############################################
 	for (i=0;i<numNode;i++)
-		V[i] = 'v_'+i;
+		V[i] = 'v_'+(i+1); // *** añadido el '+1', el elemento en la posición i representa el nodo i+1, ya que no cuenta el 0, tierra ***
 	
 	if ( ( numV + numO ) != 0 ){
 		//Fill the B matrix
@@ -764,4 +959,42 @@ function mna(netlist){
 	}else
 		throw new Error('A is singular!! A.rank()='+A.rank()+' < A.rows()='+A.rows());
 
+}
+
+
+//test
+function mostrarmatriznodos(){
+
+	encontrarnodos();
+
+	var str = "";
+	for (var j=ymin*2/malla; j<=ymax*2/malla; j+=2){	
+		for (var i=xmin*2/malla; i<=xmax*2/malla; i+=2){
+			(matriznodos[i][j] == ".") ? str += "&nbsp" : str += matriznodos[i][j];
+		}
+		str += "<br>";
+	}
+	//console.log(str);
+	say(str);	
+}
+
+
+// test
+window.addEventListener('keydown', keywindow, false);
+function keywindow(e){
+
+	// test - tecla 'r' para rotar elementos mientras se les está arastrando
+	if (e.which == 82){
+		elemdragged.rotate(Math.PI/2);
+		e.preventDefault();
+	};
+
+	// test - tecla 'v' para asignar valor 10 a todos los elementos que no tengan valor asignado
+	if (e.which == 86){
+		for (var i=0; i<elementos.length; i++){
+			if (elementos[i].value == "?"){elementos[i].value = "10";}
+		}
+		console.log("valores asignados");
+	};
+	
 }
