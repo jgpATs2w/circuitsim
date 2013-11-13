@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	
+		<meta charset="utf-8"/>
+		<title>test</title>
+
+		<script src="lib/kinetic-v4.7.2.min.js"></script>
+		<script src="lib/sylvester.js"></script>
+		<link rel="stylesheet" href="lib/jquery-ui/themes/base/jquery.ui.all.css">
+		<script src="lib/jquery-ui/jquery-1.9.1.js"></script>
+		<script src="lib/jquery-ui/ui/jquery.ui.core.js"></script>
+		<script src="lib/jquery-ui/ui/jquery.ui.widget.js"></script>
+		<script src="lib/jquery-ui/ui/jquery.ui.mouse.js"></script>
+		<script src="lib/jquery-ui/ui/jquery.ui.draggable.js"></script>
+		<script src="lib/jquery-ui/ui/jquery.ui.position.js"></script>
+		<script src="lib/jquery-ui/ui/jquery.ui.resizable.js"></script>
+		<script src="lib/jquery-ui/ui/jquery.ui.button.js"></script>
+		<script src="lib/jquery-ui/ui/jquery.ui.dialog.js"></script>
+		
+		<style>
+			ul{
+				list-style: none;
+				min-height: 80px;
+			}
+			li img{
+				float: left;
+				margin: 0.5em;
+				border: 0.1em solid black;
+			}
+			li img:hover{
+				border: 0.2em solid gray;
+			}
+			#container{
+				clear: left;
+				border: 0.1em dotted black;
+				width: 500px;
+			}
+			
+		</style>
+		
+	</head>
+	
+	<body>
+		<ul>
+			<li><img src="img/C.png" id="Cmenu"/></li>
+			<li><img src="img/R.png" id="Rmenu"/></li>
+			<li><img src="img/V.png" id="Vmenu"/></li>
+		</ul>
+		<div id="container"></div>
+		<div id="editor" title="editor">
+			<label for="value" id="label">Valor</label><input type="number" id="value"/>
+			<button id="save">salvar</button>|<button id="cancel">cancelar</button>
+			
+		</div>
+		<script src="element.js"></script>
+		
+		<script>
+		
+		//init
+	CSimEditor.init();
+	var CSimElemDef = {
+		R:{
+			counter:0,
+			unit:'ohms',
+			label:'resistencia',
+			defValue: 10
+		},
+		V:{
+			counter:0,
+			unit:'voltios',
+			label:'Fuente Tensión Ideal',
+			defValue: 1.5
+		},
+		C:{
+			counter:0,
+			unit:'faradios',
+			label:'Condensador',
+			defValue: 2
+		}
+	}
+	var CSimElements = [];
+		
+	var stage = new Kinetic.Stage({
+	    container: 'container',
+	    width: 500,
+	    height: 200
+  });
+  var layer = new Kinetic.Layer();
+  var rectX = stage.getWidth() / 2 - 50;
+  var rectY = stage.getHeight() / 2 - 25;
+  
+  function allowDrop(e){
+  	e.preventDefault();
+  }
+  function drag(e){
+  	e.dataTransfer.setData("text", e.target.id);
+  }
+  function drop(e){
+  	e.preventDefault();
+  	id = e.dataTransfer.getData("text");
+  	console.info("received "+id+" at "+e.layerY);
+  	
+  	elem = new CSimElement(id, e.layerX, e.layerY);
+  }
+  function dropDialog(e){
+  	document.getElementById('editor').style.offsetTop = e.layerY;
+  	document.getElementById('editor').style.offsetLeft = e.layerX;
+  }
+  
+  document.getElementById('Cmenu').addEventListener('dragstart', drag);
+  document.getElementById('Rmenu').addEventListener('dragstart', drag);
+  document.getElementById('Vmenu').addEventListener('dragstart', drag);
+  
+  document.getElementById('container').addEventListener('drop', drop);
+  document.getElementById('container').addEventListener('dragover', allowDrop);
+		</script>		
+		
+	</body>
+
+</html>
