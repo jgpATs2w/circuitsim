@@ -1,101 +1,56 @@
-window.addEventListener('load', function(){
-	if(cs3m == null) var cs3m = new CSim();
-},true);
-
-var CSim = function(){
-	this.load = function(){
+CSim = {
+	elemDef : {
+			R:{
+				counter:0,
+				unit:'ohms',
+				label:'resistencia',
+				defValue: 10
+			},
+			V:{
+				counter:0,
+				unit:'voltios',
+				label:'Fuente Tensión Ideal',
+				defValue: 1.5
+			},
+			C:{
+				counter:0,
+				unit:'faradios',
+				label:'Condensador',
+				defValue: 2
+			}
+	},
+	elements : [],
+	load : function(){
 		console.info('empezando..');
-		//centrado y listeners para el contenedor
 
-		anchura = Math.min(1100,$(window).width())-300;
-		altura = Math.min(500,$(window).height())-50;
+		CSimCanvas._load();
 		
-		//TODO: incluir elemento contenedor si no existe
-		contenedor=document.getElementById("contenedor");
-		
-		$("#contenedor").width(anchura);
-		$("#contenedor").height(altura);
-		
-		$("#contenedor").offset({
-			top: ($(window).height() - altura)/2, 
-			left: ($(window).width() - anchura)/2 + 120
-		});
-		
-		contenedor.addEventListener('mousedown', this._mousedown, false);
-		contenedor.addEventListener('mousemove', this._mousemove, false);
-		contenedor.addEventListener('mouseup', this._mouseup, false);
+		this._initListeners();
 
-		//parametros iniciales
 		this._inicializar();
 
-		// inicialización de matrices
 		this._inicialiazarmatrices();
 
-		// definicion de las capas de dibujo de kinetic
-		this._stage = new Kinetic.Stage({
-			container: 'contenedor',
-			width: anchura,
-			height: altura
-		});
-		
-		this._backgroundlayer = new Kinetic.Layer();
-		this._circuitlayer = new Kinetic.Layer();
-		this._panellayer = new Kinetic.Layer();
-		this._draglayer = new Kinetic.Layer();
-		this._textlayer = new Kinetic.Layer();
-		this._nodeslayer = "";
-		
-		this._stage.add(this._backgroundlayer);
-		this._stage.add(this._circuitlayer);
-		this._stage.add(this._panellayer);
-		this._stage.add(this._draglayer);
-		this._stage.add(this._textlayer);
+		CSimCanvas._dibujarMalla();
 
-		//creación de la malla de puntos ++++++++++++++++++++++++++++++
+	},//end load
+	_initListeners : function(){
+		CSimCanvas._initListeners();
 		
-		//el borde
-		var fondo = new Kinetic.Rect({
-			x: 0,
-			y: 0,
-			width: anchura,
-			height: altura,
-			fill: "white",
-			stroke: "black",
-			strokeWidth: 4
-		});
-		this._backgroundlayer.add(fondo);		 
-		
-		//y los puntos
-		for (var i=this._malla; i<anchura; i+=this._malla){
-			for (var j=this._malla; j<altura; j+=this._malla){	
-				var rect = new Kinetic.Rect({
-					x: i-1,
-					y: j-1,
-					width: 2,
-					height: 2,
-					fill: "darkgray",
-				});
-				
-				this._backgroundlayer.add(rect);
-			}
-		}
-		this._backgroundlayer.draw();
-		
-		//fin malla ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-	
-		// creación de las imágenes de los elementos ***********************************************
-		
-		for (i=0; i<this._elemtypes.length; i++){
-			this._numelemarray[this._elemtypes[i]]=0;
-			this._createelems(i);
-		}
-		// fin de la creación de las imágenes de los elementos **************************************
-
-	}//end load
-	
-	this._inicializar = function (){
-		this._drawing = false;
-		this._textclick = false;
+		document.getElementById('Cmenu').addEventListener('dragstart', CSimDragop.drag);
+	    document.getElementById('Rmenu').addEventListener('dragstart', CSimDragop.drag);
+	    document.getElementById('Vmenu').addEventListener('dragstart', CSimDragop.drag);
+	    document.getElementById('Wmenu').addEventListener('click', function(){
+	    	this.className = (this.className == "pressedImg") ? "" : "pressedImg";
+	    	CSimCanvas._wiring = CSimCanvas._wiring ? false : true;
+	    });
+	  
+	    document.getElementById('contenedor').addEventListener('drop', CSimDragop.drop);
+	    document.getElementById('contenedor').addEventListener('dragover', CSimDragop.allowDrop);
+	    
+	    window.addEventListener('keydown', this._keywindow, false);
+	},
+	_inicializar : function (){
 		this._elementdrag = false;
 		this._mostrandonodos = false; //test
 		this._elemdragged = "";
@@ -109,11 +64,10 @@ var CSim = function(){
 		this._matrizcircuito = [];
 		this._matriznodos = [];
 	
-		this._elementos = [];
 		this._netlist = [];
 		
-		this._elemtypes = ["R", "V", "C"]; // añadir más..
 		this._numelemarray = [];
+		this._elemtypes = "RVC";
 	
 		this._numelemtotal = 0;
 	
@@ -121,247 +75,23 @@ var CSim = function(){
 		this._ymin = 10000;
 		this._xmax = 0;
 		this._ymax = 0;
-	}
-	this._inicialiazarmatrices = function (){
-		for (var i=0; i<anchura*2/this._malla; i++){
+		
+		CSimEditor.init();
+	},
+	_inicialiazarmatrices : function (){
+		for (var i=0; i<CSimCanvas.anchura*2/this._malla; i++){
 			this._matrizcircuito[i] = [];
 			this._matriznodos[i] = [];
-			for (var j=0; j<altura*2/this._malla; j++){		
+			for (var j=0; j<CSimCanvas.altura*2/this._malla; j++){		
 				this._matrizcircuito[i][j] = ".";
 				this._matriznodos[i][j] = ".";
 			}
 		}
-	}
-	this._createelems = function (index){
-		img = new Image();
-	
-		img.onload = function() {
-			cs3m._createpanelelem(this, index);
-			cs3m._createdraggingelem(this, index);
-		}
-		
-		img.src = "img/" + this._elemtypes[index] + ".png";
-		
-	}
-	//creación de los elementos fijos (el panel en sí)
-	this._createpanelelem = function(imagen, index){
-				
-			var elemimg = new Kinetic.Image({
-				x: 60,
-				y: 60 + index*(this._elemsize + this._malla),
-				image: imagen,
-				width: this._elemsize,
-				height: this._elemsize,
-				offset: [this._elemsize/2, this._elemsize/2],
-				stroke:"#9966FF",
-				strokeWidth:2
-			});
-	
-			cs3m._panellayer.add(elemimg);
-			cs3m._panellayer.draw();		
-	}
-	
-	//creación de los elementos arrastrables
-	this._createdraggingelem = function (imagen, index){
-			
-		elemimgdrag = new Kinetic.Image({
-			x: 60,
-			y: 60 + index*(this._elemsize + this._malla),
-			image: imagen,
-			width: this._elemsize,
-			height: this._elemsize,
-			draggable: true,
-			offset: [this._elemsize/2, this._elemsize/2]
-		});		
-	
-		elemimgdrag.setAttr("elemindex", index);
-		//elemimgdrag.setAttr("rotation", 0);
-
-		//interactividad de los elementos
-		elemimgdrag.on("mousedown", function(){
-			cs3m._elementdrag = true;
-			cs3m._elemdragged = this;
-		});
-	
-		elemimgdrag.on("mouseup", function(){
-			cs3m._elementdrag = false;
-			cs3m._elemdragged = "";
-			
-			x = this.getAttr("x");
-			y = this.getAttr("y");
-			
-			cs3m._ajustaramalla();
-			
-			this.setAttr("x",x);
-			this.setAttr("y",y);
-			
-			cs3m._draglayer.draw();
-			
-			//determina la posición de los extremos del elemento en función de la posición de la imagen
-			if (this.getAttr("rotation") % Math.PI == 0){
-			
-				x0 = x - cs3m._elemsize/2;
-				xf = x + cs3m._elemsize/2;
-				y0 = yf = y1 = y2 = y;
-				
-				x1 = x0 + cs3m._malla;
-				x2 = xf - cs3m._malla;
-				
-			} else {
-			
-				x0 = xf = x1 = x2 = x;
-				y0 = y - cs3m._elemsize/2;
-				yf = y + cs3m._elemsize/2;
-				
-				y1 = y0 + cs3m._malla;
-				y2 = yf - cs3m._malla;
-			}
-			
-			
-			//añade el elemento al circuito
-			tipoelem = cs3m._elemtypes[cs3m._index];
-			cs3m._addtomatrix(x1, y1, x2, y2, tipoelem);
-			cs3m._addelement(x1, y1, x2, y2, tipoelem);
-	
-			//añade una 'unidad' de cable en cada extremo
-			cs3m._addtomatrix(x0, y0, x1, y1, "w"); 
-			cs3m._addtomatrix(x2, y2, xf, yf, "w");
-			
-			//crea un nuevo elemento arrastable en el panel
-			cs3m._createdraggingelem(this.getAttr("image"), this.getAttr("elemindex"));
-		});
-	
-		
-		elemimgdrag.on("mouseover", function(){
-			document.body.style.cursor =  "pointer";
-		});
-			
-		elemimgdrag.on("mouseout", function() {
-			document.body.style.cursor = "default";
-		});
-		
-		
-		cs3m._draglayer.add(elemimgdrag);
-		cs3m._draglayer.draw();	
-	}
-	//funciones de dibujo *****************************
-	this._mousedown = function (ev){
-			
-		if (cs3m._textclick || cs3m._elementdrag){return;}
-		
-		cs3m._getcoordinates(ev);	
-		cs3m._ajustaramalla();
-		
-		groundnode = {x: x*2/cs3m._malla, y: y*2/cs3m._malla};
-		
-		cs3m._drawing = true;
-		dir = "";
-		
-		x0 = x;
-		y0 = y;
-		x1 = x;
-		y1 = y;
-		
-		// test - old - dibujado de elementos con ratón
-		if (cs3m._tipoelemento == "w"){color = "black";}//
-		if (cs3m._tipoelemento == "R"){color = "red";}//
-		if (cs3m._tipoelemento == "V"){color = "limegreen";}//
-		
-		cs3m._drawinglayer = new Kinetic.Layer();
-		
-		cs3m._templine = new Kinetic.Line({
-			points: [x0, y0, x0, y0],
-	        stroke: color,
-	        strokeWidth: cablewidth,
-	        lineCap: 'round',
-	        lineJoin: 'round'
-	     });
-		 
-	    cs3m._drawinglayer.add(cs3m._templine); 
-		stage.add(cs3m._drawinglayer);
-		
-	}
-	this._mousemove = function (ev){
-			
-		if (cs3m._drawing){
-		
-			cs3m._getcoordinates(ev);
-			cs3m._ajustaramalla();
-			
-			
-			// determina la dirección inicial del trazo
-			if (cs3m._dir == "" && Math.abs(cs3m._x-x0) + Math.abs(cs3m._y-y0) > 3*cs3m._malla){
-				(Math.abs(cs3m._x-x0)>2*cs3m._malla) ? cs3m._dir = "horizontal" : cs3m._dir = "vertical";
-			}
-			
-			// si la dirección ya está clara, la mantiene
-			switch (cs3m._dir){
-				
-				case "horizontal":
-					x1 = x;
-					y1 = y0;
-					break;
-					
-				case "vertical":
-					x1 = x0;
-					y1 = y;
-					break;
-					
-				default:
-					if (Math.abs(x-x0) > Math.abs(y-y0)){
-						x1 = x;
-						y1 = y0;
-					} else {
-						x1 = x0;
-						y1 = y;
-					}
-					break;
-			}	
-			
-			
-			if (cs3m._tipoelemento == "w"){
-				x2 = x;
-				y2 = y;
-			} else {
-				x2 = x1;
-				y2 = y1;
-			}
-				
-			cs3m._templine.setAttr("points", [x0, y0, x1, y1, x2, y2]);
-			
-			cs3m._drawinglayer.draw();
-			
-		}
-	}
-	this._mouseup = function (ev){
-		
-			cs3m._getcoordinates(ev);
-			cs3m._ajustaramalla();
-			
-			if (cs3m._drawing){
-			
-				if (x0 != x1 || y0 != y1){
-					
-					cs3m._circuitlayer.add(cs3m._templine);
-					cs3m._circuitlayer.draw();
-					
-					if (cs3m._tipoelemento != "w"){
-						addelement(x0, y0, x1, y1, cs3m._tipoelemento);
-					}
-					
-					cs3m._addtomatrix(x0, y0, x1, y1, cs3m._tipoelemento);
-					cs3m._addtomatrix(x1, y1, x2, y2, cs3m._tipoelemento);
-				
-				}
-		
-				cs3m._drawing = false;
-				cs3m._drawinglayer.remove();			
-			}
-		}
+	},
 		
 	// añadir elementos y cables dibujados a la matriz del circuito
 		
-	this._addtomatrix = function (x0, y0, xf, yf, tipo){
+	_addtomatrix : function (x0, y0, xf, yf, tipo){
 		
 			for (var i=Math.min(x0,xf)*2/this._malla; i<=Math.max(x0,xf)*2/this._malla; i++){
 				for (var j=Math.min(y0,yf)*2/this._malla; j<=Math.max(y0,yf)*2/this._malla; j++){
@@ -374,19 +104,10 @@ var CSim = function(){
 			this._xmax = Math.max(this._xmax, x0, xf);
 			this._ymax = Math.max(this._ymax, y0, yf);
 			
-			
-			// test, para que actualice los nodos si se están mostrando al añadir cables y elementos
-			if (this._mostrandonodos){ 
-				this._nodeslayer.remove();
-				this._nodeslayer = "";
-				this._mostrandonodos = false;
-				this._mostrarnodos();
-			}
-			
-		}
+	},
 	// añadir elementos al array de elementos y añadirles etiquetas
 		
-	this._addelement = function (x0, y0, xf, yf, tipo){
+	_addelement : function (x0, y0, xf, yf, tipo){
 			
 			this._numelemtotal++;
 			this._numelemarray[tipo]++;
@@ -444,54 +165,38 @@ var CSim = function(){
 			this._textlayer.draw();
 			
 			// fin de etiqueta -------	
-		}
-	this._addListeners = function(){
-		//TODO asignar valores a los elementos del circuito
-		
-	}
+	},
 	// fin del las funciones de dibujo ***************************************************
 	//funciones auxiliares
-		
-	this._getcoordinates = function (ev){
-			this._x = ev.clientX - $("#contenedor").position().left;
-			this._y = ev.clientY - $("#contenedor").position().top;
-		}
-		
-		
-	this._ajustaramalla = function (){
-			this._x = Math.round(cs3m._x/cs3m._malla)*cs3m._malla;
-			this._y = Math.round(cs3m._y/cs3m._malla)*cs3m._malla;
-		}
+	
 	//funciones de los botones
 		
-	this._borrartodo = function (){
-			with(cs3m){
-				_circuitlayer.remove();
-				_textlayer.remove();
-				
-				_circuitlayer = new Kinetic.Layer();
-				_textlayer = new Kinetic.Layer();
-				
-				_stage.add(circuitlayer);
-				_stage.add(textlayer);
-				
-				_inicializar();
-				_inicialiazarmatrices();
-			}	
-		}
-	
-	this._dibujarcables = function (){
+	_borrartodo : function (){
+		with(CSim){
+			_circuitlayer.remove();
+			_textlayer.remove();
+			
+			_circuitlayer = new Kinetic.Layer();
+			_textlayer = new Kinetic.Layer();
+			
+			_stage.add(circuitlayer);
+			_stage.add(textlayer);
+			
+			_inicializar();
+			_inicialiazarmatrices();
+		}	
+	},
+	_dibujarcables : function (){
 			this._tipoelemento = "w";
-		}
-		
-	this._dibujarresistencias = function (){
+	},
+	_dibujarresistencias : function (){
 			this._tipoelemento = "R";
-		}
+	},
 		
-	this._dibujarfuentes = function (){
+	_dibujarfuentes : function (){
 			this._tipoelemento = "V";
-		}
-	this._mostrarnodos = function (){
+	},
+	_mostrarnodos : function (){
 		
 			if(this._mostrandonodos){
 				this._nodeslayer.remove();
@@ -528,9 +233,9 @@ var CSim = function(){
 				}
 				this._stage.add(nodeslayer);
 			}
-		}
+		},
 	// creación de la netlist		
-	this._generarnetlist = function (){
+	_generarnetlist : function (){
 		
 			this._encontrarnodos();
 			
@@ -555,8 +260,8 @@ var CSim = function(){
 			}
 			
 			if (!this._everythingfine){alert("hay algo mal conectado!")};
-		}
-	this._nearestnode = function (i, j){
+	},
+	_nearestnode : function (i, j){
 		
 			if (typeof this._matriznodos[i-1][j] == "number"){
 				return this._matriznodos[i-1][j];
@@ -573,9 +278,9 @@ var CSim = function(){
 			} else {
 				this._everythingfine = false;
 			}
-		}
+	},
 	//función de busqueda de los nodos del circuito
-	this._encontrarnodos = function(){
+	_encontrarnodos : function(){
 
 			nodetemp = 0;
 			node = 0;
@@ -690,14 +395,14 @@ var CSim = function(){
 			//matriz de nodos final
 			for (var j=this._ymin*2/this._malla; j<=this._ymax*2/this._malla; j++){	
 				for (var i=this._xmin*2/this._malla; i<=this._xmax*2/this._malla; i++){
-					if (typeof matriznodos[i][j] == "number"){
+					if (typeof this._matriznodos[i][j] == "number"){
 						this._matriznodos[i][j] = temptoreal[this._matriznodos[i][j]] ;
 					}
 				}
 			}	
-		}
+	},
 	
-	this._solveMNA = function (netlist){
+	_solveMNA : function (netlist){
 			console.info('solveMNA started -- please be patient.');
 			
 			this._nl = $M(eval(netlist));
@@ -889,43 +594,41 @@ var CSim = function(){
 			}else
 				throw new Error('A is singular!! A.rank()='+A.rank()+' < A.rows()='+A.rows());
 		
-		}
+		},
 	
-	this.setTest = function(){
+	setTest : function(){
 		// test
 		window.addEventListener('keydown', keywindow, false);
 		
-	}
-	this._mostrarmatriznodos = function(){
+	},
+	_mostrarmatriznodos : function(){
 		
 			this._encontrarnodos();
 		
 			var str = "";
-			for (var j=ymin*2/this._malla; j<=ymax*2/this._malla; j+=2){	
-				for (var i=xmin*2/this._malla; i<=xmax*2/this._malla; i+=2){
-					(this._matriznodos[i][j] == ".") ? str += "&nbsp" : str += matriznodos[i][j];
+			for (var j=this._ymin*2/this._malla; j<=this._ymax*2/this._malla; j+=2){	
+				for (var i=this._xmin*2/this._malla; i<=this._xmax*2/this._malla; i+=2){
+					(this._matriznodos[i][j] == ".") ? str += " " : str += this._matriznodos[i][j];
 				}
-				str += "<br>";
+				str += "\n";
 			}
-			//console.log(str);
-			this._say(str);	
-		}
-	this._keywindow = function(){
+			console.log(str);
+			//this._say(str);	
+	},
+	_keywindow : function(e){
+		//console.info(e.which);
 			// test - tecla 'r' para rotar elementos mientras se les está arastrando
 			if (e.which == 82){
 				elemdragged.rotate(Math.PI/2);
 				e.preventDefault();
 			};
 		
-			// test - tecla 'v' para asignar valor 10 a todos los elementos que no tengan valor asignado
-			if (e.which == 86){
-				for (var i=0; i<elementos.length; i++){
-					if (elementos[i].value == "?"){elementos[i].value = "10";}
-				}
-				console.log("valores asignados");
+			// test - tecla 'm' para mostrar los nodos por consola
+			if (e.which == 77){
+				CSim._mostrarmatriznodos();
 			};
-	}
-	this._say = function(m){
+	},
+	_say : function(m){
 		console.info(m);
 	}
 }

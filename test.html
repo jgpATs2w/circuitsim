@@ -7,16 +7,17 @@
 
 		<script src="lib/kinetic-v4.7.2.min.js"></script>
 		<script src="lib/sylvester.js"></script>
-		<link rel="stylesheet" href="lib/jquery-ui/themes/base/jquery.ui.all.css">
-		<script src="lib/jquery-ui/jquery-1.9.1.js"></script>
-		<script src="lib/jquery-ui/ui/jquery.ui.core.js"></script>
-		<script src="lib/jquery-ui/ui/jquery.ui.widget.js"></script>
-		<script src="lib/jquery-ui/ui/jquery.ui.mouse.js"></script>
-		<script src="lib/jquery-ui/ui/jquery.ui.draggable.js"></script>
-		<script src="lib/jquery-ui/ui/jquery.ui.position.js"></script>
-		<script src="lib/jquery-ui/ui/jquery.ui.resizable.js"></script>
-		<script src="lib/jquery-ui/ui/jquery.ui.button.js"></script>
-		<script src="lib/jquery-ui/ui/jquery.ui.dialog.js"></script>
+		<link rel="stylesheet" href="css/jquery.ui.all.css">
+		<script src="lib/jquery-1.9.1.js"></script>
+		<script src="lib/jquery.ui.core.js"></script>
+		<script src="lib/jquery.ui.widget.js"></script>
+		<script src="lib/jquery.ui.mouse.js"></script>
+		<script src="lib/jquery.ui.draggable.js"></script>
+		<script src="lib/jquery.ui.droppable.js"></script>
+		<script src="lib/jquery.ui.position.js"></script>
+		<script src="lib/jquery.ui.resizable.js"></script>
+		<script src="lib/jquery.ui.button.js"></script>
+		<script src="lib/jquery.ui.dialog.js"></script>
 		
 		<style>
 			ul{
@@ -36,7 +37,6 @@
 				border: 0.1em dotted black;
 				width: 500px;
 			}
-			
 		</style>
 		
 	</head>
@@ -103,17 +103,29 @@
   	
   	elem = new CSimElement(id, e.layerX, e.layerY);
   }
-  function dropDialog(e){
-  	document.getElementById('editor').style.offsetTop = e.layerY;
-  	document.getElementById('editor').style.offsetLeft = e.layerX;
-  }
+	CSimDragop = {
+		allowDrop : function(e){
+			e.preventDefault();
+		},
+		drag : function(e){
+			e.dataTransfer.setData("text", e.target.id);
+		},
+		drop : function(e){
+			e.preventDefault();
+		  	id = e.dataTransfer.getData("text");
+		  	console.info("received "+id+" at "+e.layerY);
+		  	
+		  	elem = new CSimElement(id, e.layerX, e.layerY);
+		}
+	}
   
-  document.getElementById('Cmenu').addEventListener('dragstart', drag);
-  document.getElementById('Rmenu').addEventListener('dragstart', drag);
-  document.getElementById('Vmenu').addEventListener('dragstart', drag);
+  document.getElementById('Cmenu').addEventListener('dragstart', CSimDragop.drag);
+  document.getElementById('Rmenu').addEventListener('dragstart', CSimDragop.drag);
+  document.getElementById('Vmenu').addEventListener('dragstart', CSimDragop.drag);
   
-  document.getElementById('container').addEventListener('drop', drop);
-  document.getElementById('container').addEventListener('dragover', allowDrop);
+  document.getElementById('container').addEventListener('drop', CSimDragop.drop);
+  document.getElementById('container').addEventListener('dragover', CSimDragop.allowDrop);
+
 		</script>		
 		
 	</body>
