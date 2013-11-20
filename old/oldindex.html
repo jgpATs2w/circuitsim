@@ -11,55 +11,59 @@
 		<script src="lib/jquery.ui.widget.js"></script>
 		<script src="lib/jquery.ui.mouse.js"></script>
 		<script src="lib/jquery.ui.draggable.js"></script>
-		<script src="lib/jquery.ui.droppable.js"></script>
 		<script src="lib/jquery.ui.position.js"></script>
 		<script src="lib/jquery.ui.resizable.js"></script>
 		<script src="lib/jquery.ui.button.js"></script>
 		<script src="lib/jquery.ui.dialog.js"></script>
-		<script src="lib/jquery.ui.touch-punch.js"></script>
 		<script src="lib/kinetic-v4.7.2.min.js"></script>
 		<script src="lib/sylvester.js"></script>
 		<style>
 			ul{
 				list-style: none;
-				min-height: 90px;
-			}
-			li {
-				height: 90px;
+				min-height: 80px;
 			}
 			li img{
 				float: left;
-				width: 72px;
-				height: 72px;
+				margin: 0.5em;
+				border: 0.1em solid black;
 			}
-			li div{
-				border: 0.15em solid gray;
-				width: 72px;
-				height: 72px;
+			li img:hover{
+				border: 0.2em solid gray;
 			}
-			li div:hover{
-				border: 0.15em solid blue;
+			#container{
+				clear: left;
+				border: 0.1em dotted black;
+				width: 500px;
 			}
-			#editor{display: none;}
-			.ui-draggable{z-index: 10}
 		</style>
 	</head>
 	
 	<body>
+		<button onclick="borrartodo();">Borrar todo</button><br>
+		<br>
+		<button onclick="dibujarcables();">Dibujar cables</button><br>
+		<button onclick="dibujarresistencias();">Dibujar resistencias</button><br>
+		<button onclick="dibujarfuentes();">Dibujar fuentes</button><br>
+		<textarea id="inputvalue" style="height: 15px;"></textarea>
+		<br>
+		<br>
+		<button onclick="mostrarnodos();">Mostrar/ocultar nodos</button><br>
+		<button onclick="mostrarmatriznodos();">Mostrar la matriz de nodos</button><br>
+		<br>
+		<button onclick="solve()">SOLVE</button>
+		<button onclick="del()">CLEAN</button>
+		
 		<ul>
-			<li><div><img src="img/V.png" id="Vmenu"/></div></li>
-			<li><div><img src="img/R.png" id="Rmenu"/></div></li>
-			<li><div><img src="img/G.png" id="Gmenu"/></div></li>
+			<li><img src="img/C.png" id="Cmenu"/></li>
+			<li><img src="img/R.png" id="Rmenu"/></li>
+			<li><img src="img/V.png" id="Vmenu"/></li>
 		</ul>
-		
-		<div id="editor" title="editor">
-			<label for="value" id="label">Valor</label><input type="number" id="value"/><br>
-			<button id="save">salvar</button>|<button id="cancel">cancelar</button>
-		</div>
-		
-		<br><button id="solve">Resolver</button>
-		
 		<div id="contenedor"></div>
+		<div id="editor" title="editor">
+			<label for="value" id="label">Valor</label><input type="number" id="value"/>
+			<button id="save">salvar</button>|<button id="cancel">cancelar</button>
+			
+		</div>
 		
 		<script src="element.js"></script>
 		<script src="CSim.js"></script>
