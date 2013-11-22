@@ -241,7 +241,7 @@ CSim = {
 			}
 			if (conected < 2) this._everythingfine = false;	
 		}
-		if (!this._everythingfine) console.error("Hay elementos mal conectados!");
+		if (!this._everythingfine) this._say("Revisa el cableado!!");
 	},
 	
 	_nearestnode : function (i, j){
@@ -687,7 +687,7 @@ CSim = {
 			};
 	},
 	_say : function(m){
-		console.info(m);
+		$('#console').addClass('ui-state-highlight').html(m);
 	},
 	_significantDigits : function(n, digits){
 		n = Math.round(n*Math.pow(10,7))/Math.pow(10,7);
@@ -888,19 +888,12 @@ CSimCanvas = {
 	_drawing : false,
 	_dragging : false,
 	_load : function(){
-		this.anchura = Math.min(1100,$(window).width())-300;
-		this.altura = Math.min(500,$(window).height())-50;
+		this.anchura = $("#contenedor").width();
+		this.altura = $("#contenedor").height();
 		
 		//TODO: incluir elemento contenedor si no existe
 		this.contenedor=document.getElementById("contenedor");
-		
-		$("#contenedor").width(this.anchura);
-		$("#contenedor").height(this.altura);
-		
-		$("#contenedor").offset({
-			top: ($(window).height() - this.altura)/2, 
-			left: ($(window).width() - this.anchura)/2 + 120
-		});
+
 		this._stage = new Kinetic.Stage({
 			container: 'contenedor',
 			width: this.anchura,
@@ -991,8 +984,11 @@ CSimCanvas = {
 		imageObj.src = "img/"+elem.type+".png";
 	},
 	_getcoordinates : function (ev){
-			
-			ev = ev.type.indexOf('touch') >=0 ? event.touches.item(0) : ev;
+			try{
+				if( $.support.touch && event.touches.item(0) != null) 
+					ev = event.touches.item(0);
+				
+			}catch(e){ console.error(e); }
 			
 			return [ev.clientX - $("#contenedor").position().left,
 					ev.clientY - $("#contenedor").position().top];
@@ -1028,16 +1024,9 @@ CSimCanvas = {
 	        lineCap: 'round',
 	        lineJoin: 'round'
 	    });
-		 
-		// if (CSim._selectedimg != ""){
-			// CSim._selectedimg.setAttr("strokeEnabled", false);
-			// CSimCanvas._circuitlayer.draw();
-			// CSim._selectedimg = "";
-		// }
 		
 	    CSimCanvas._drawinglayer.add(CSimCanvas._templine); 
 		CSimCanvas._stage.add(CSimCanvas._drawinglayer);
-		
 		
 	},
 	_mousemove : function (ev){
@@ -1047,6 +1036,8 @@ CSimCanvas = {
 			var p = CSimCanvas._getcoordinates(ev);
 			p = CSimCanvas._ajustaramalla(p[0], p[1]);
 			var x = p[0]; var y = p[1];
+			
+			if( x-CSimCanvas._x0 < 2* CSim._malla && y-CSimCanvas._y0 < 2*CSim._malla ) return false;
 			
 			if (CSimCanvas._dir == "" && Math.abs(x-CSimCanvas._x0) + Math.abs(y-CSimCanvas._y0) > 3*CSim._malla){
 				(Math.abs(x-CSimCanvas._x0)>2*CSim._malla) ? CSimCanvas._dir = "horizontal" : CSimCanvas._dir = "vertical";

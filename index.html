@@ -6,6 +6,8 @@
 		<meta name="viewport" content="width=device-width,initial-scale=1.0" />
 		
 		<link rel="stylesheet" href="css/jquery.ui.all.css">
+		<link rel="stylesheet" href="css/csim.css">
+		
 		<script src="lib/jquery-1.9.1.js"></script>
 		<script src="lib/jquery.ui.core.js"></script>
 		<script src="lib/jquery.ui.widget.js"></script>
@@ -19,49 +21,36 @@
 		<script src="lib/jquery.ui.touch-punch.js"></script>
 		<script src="lib/kinetic-v4.7.2.min.js"></script>
 		<script src="lib/sylvester.js"></script>
-		<style>
-			ul{
-				list-style: none;
-				min-height: 90px;
-			}
-			li {
-				height: 90px;
-			}
-			li img{
-				float: left;
-				width: 72px;
-				height: 72px;
-			}
-			li div{
-				border: 0.15em solid gray;
-				width: 72px;
-				height: 72px;
-			}
-			li div:hover{
-				border: 0.15em solid blue;
-			}
-			#editor{display: none;}
-			.ui-draggable-dragging {z-index: 2}
-		</style>
+		
 	</head>
 	
 	<body>
-		<ul>
-			<li><div><img src="img/V.png" id="Vmenu"/></div></li>
-			<li><div><img src="img/R.png" id="Rmenu"/></div></li>
-			<li><div><img src="img/G.png" id="Gmenu"/></div></li>
-		</ul>
+		<nav>
+			<ul>
+				<li><img src="img/V.png" width="50px" height="50px" id="Vmenu" title="fuente de tensión ideal"/></li>
+				<li><img src="img/R.png" width="50px" height="50px" id="Rmenu" title="resistencia"/></li>
+				<li><img src="img/R_var.png" width="50px" height="50px" id="R_var_menu" title="resistencia variable"/></li>
+				<li><img src="img/G.png" width="50px" height="50px" id="Gmenu" title="tierra"/></li>
+				<li><img src="img/I.png" width="50px" height="50px" id="Imenu" title="fuente de corriente ideal"/></li>
+				<li><img src="img/I_real.png" width="50px" height="50px" id="I_real_menu" title="fuente de corriente real"/></li>
+				<li><img src="img/S.png" width="50px" height="50px" id="Smenu" title="interruptor"/></li>
+				<li><img src="img/F.png" width="50px" height="50px" id="Fmenu" title="fusible"/></li>
+				<li><img src="img/Amperimetro.png" width="50px" height="50px" id="MA_menu" title="amperímetro"/></li>
+				<li><img src="img/Voltimetro.png" width="50px" height="50px" id="MV_menu" title="voltímetro"/></li>
+				<li><img src="img/R_receptor.png" width="50px" height="50px" id="R_rec_menu" title="receptor de corriente"/></li>
+			</ul>
+		</nav>
+		<section>
+			<div id="contenedor"></div>
+		</section>
+		
+		<footer><p id="console">Iniciando</p><button id="solve">Resolver</button></footer>
 		
 		<div id="editor" title="editor">
 			<label for="value" id="label">Valor</label><input type="number" id="value"/><br>
 			<button id="save">salvar</button>|<button id="cancel">cancelar</button>
 		</div>
 		
-		<br><button id="solve">Resolver</button>
-		
-		<div id="contenedor"></div>
-		
-		<script src="element.js"></script>
 		<script src="CSim.js"></script>
 		<script>
 			CSim.load();
