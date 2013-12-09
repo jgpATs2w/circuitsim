@@ -1,0 +1,14 @@
+@font-face{
+		font-family: go-boom;
+		src: url('go-boom.ttf');
+}
+#s2w_toast_div{
+	font-family: go-boom;
+	position:absolute;
+	bottom: 10%; left: 45%;
+	
+	padding: 5px;
+	background-color:#CCCCCC; opacity: 0.8;
+	border:0.5px solid #bebebe;
+	border-radius:5px;-moz-border-radius:5px;-webkit-border-radius:5px;
+}

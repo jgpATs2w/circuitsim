@@ -9,7 +9,6 @@ header, section, aside, footer, ul, li, a, nav, button{
 	display: block;
 }
 header, footer {
-	background-color: red;
 	padding: 0.5em 0 0 1em;
 }
 nav {
@@ -18,8 +17,6 @@ nav {
 section {
 	padding: 0.5em;
 	width: 100%; height: 15em;
-	
-	background-color: green;
 }
 ul{
 	list-style: none;
@@ -34,14 +31,15 @@ li img{
 }
 li img:hover{
 	border: 0.15em solid blue;
+	cursor: hand;
 }
 footer{
 	clear:left;
 }
 button{
-	padding: 0.5em;
+	padding: 0.1em;
 }
-#editor{ display: none; }
+#csimeditor{ display: none; }
 #contenedor{
 	display: block;
 	width: 90%; height: 100%;
@@ -61,6 +59,7 @@ button{
 		width: 20%;
 		float: left;
 	}
+	nav button{ clear:left; }
 	section {	
 		width: 75%; height: 30em;
 		float: left;
