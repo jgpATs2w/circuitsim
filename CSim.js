@@ -455,7 +455,8 @@ CSimElement.prototype._delete = function(){
 	CSim.elemDef[this._type]['counter'] --;
 	delete CSim._elements[ this._name ];
 	delete CSimCircuit._elements[ this._celements[0]._name ];
-	CSimCanvas._elementRemove(this);
+	this._label.destroy();
+	this._image.destroy();
 }
 CSimElementIreal = function(p){
 	CSimElement.call(this,p);
